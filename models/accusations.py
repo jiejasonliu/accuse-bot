@@ -14,6 +14,7 @@ class AccusationModel(BaseModel):
     accuser_display_name: str
     accuser_id: int64.Int64
     sentence_length: int  # number of days
+    offense: str
     message_id: int64.Int64
     channel_id: int64.Int64
     created_at: datetime

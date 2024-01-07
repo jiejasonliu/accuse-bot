@@ -91,13 +91,13 @@ class BOCBot(discord.Bot):
 
         new_line = '\n'  # cannot use backslashes in f-strings prior to Python 3.12
         msg = f'''
-{'=' * 50}
-**Accusing {accused.mention} for cringe.** 
-They currently have 1 (TODO) strike(s) this year.
+{'=' * 64}
+**Accusing {accused.mention}** -- they have 1 (TODO) strike(s) this year.
 
 Proposing a sentence length of 7 (TODO) days for the offense of:
-- <offense message>
-
+> 
+> *{accusation.offense}*
+> 
 Signed by: {accuser.mention}
 
 > **Guilty:**
@@ -105,8 +105,8 @@ Signed by: {accuser.mention}
 > 
 > **Innocent:**
 {format_user_mentions_or_empty_state(no_vote_users)}
-> 
-> *Vote will pass at (time) EST or majority vote*
+
+*Vote will pass at (time) EST or majority vote*
 '''
         await message.edit(msg, view=AccusationView(self, accusation_id))
 

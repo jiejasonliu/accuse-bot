@@ -2,6 +2,7 @@ import discord
 
 from bson import int64, ObjectId
 from datetime import datetime
+from pydantic import ValidationError
 from pymongo import ReturnDocument
 from typing import Optional
 
@@ -46,7 +47,7 @@ def get_accusation_by_id(accusation_id: str) -> Optional[AccusationModel]:
 
 
 def create_accusation(accused: discord.Member, accuser: discord.Member,
-                      sentence_length: int) -> AccusationModel:
+                      sentence_length: int, offense: str) -> AccusationModel:
     with DbContext() as db:
         accusation_model = {
             'guild_id': accused.guild.id,
@@ -55,6 +56,7 @@ def create_accusation(accused: discord.Member, accuser: discord.Member,
             'accuser_display_name': accuser.display_name,
             'accuser_id': accuser.id,
             'sentence_length': sentence_length,
+            'offense': offense,
             # (temp magic values: see update_accusation_for_message_id)
             'message_id': int64.Int64(0),
             'channel_id': int64.Int64(0),
@@ -66,7 +68,12 @@ def create_accusation(accused: discord.Member, accuser: discord.Member,
         new_accusation_json = db["accusations"].find_one(
             {"_id": new_accusation.inserted_id})
 
-        return AccusationModel.model_validate(new_accusation_json)
+        try:
+            return AccusationModel.model_validate(new_accusation_json)
+        except ValidationError as e:
+            print('Failed to validate, deleting inserted accusation', e)
+            permanently_delete_accusation(new_accusation.inserted_id)
+            return None
 
 
 # this kinda sucks; we have a chicken and the egg problem

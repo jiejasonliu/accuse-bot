@@ -17,11 +17,15 @@ class AccuseCommand(commands.Cog):
         return [member.display_name for member in valid_members]
 
     @commands.slash_command(name="accuse")
-    async def _accuse(self, ctx: discord.ApplicationContext,
-                      user: discord.Option(
-                          str,
-                          "Select a user",
-                          autocomplete=get_member_names_autocomplete)):
+    async def _accuse(
+        self,
+        ctx: discord.ApplicationContext,
+        user: discord.Option(str,
+                             "Select a user",
+                             autocomplete=get_member_names_autocomplete,
+                             required=True),
+        offense: discord.Option(str, "Describe the offense", required=True),
+    ):
         valid_members = self.filter_valid_members(ctx.channel.members)
         valid_names = [member.display_name for member in valid_members]
         if not (user in valid_names):
@@ -43,6 +47,7 @@ class AccuseCommand(commands.Cog):
             accused=accused,
             accuser=accuser,
             sentence_length=sentence_length,
+            offense=offense,
         )
 
         interaction_or_message = await ctx.respond(

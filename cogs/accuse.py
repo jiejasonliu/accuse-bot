@@ -51,7 +51,6 @@ class AccuseCommand(commands.Cog):
 
         if isinstance(interaction_or_message, discord.Interaction):
             message = await interaction_or_message.original_response()
-            print(message)
         else:
             message = interaction_or_message
 

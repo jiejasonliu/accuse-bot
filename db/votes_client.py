@@ -41,5 +41,15 @@ def upsert_user_vote_for_accusation(accusation_id: str, user_id: str,
             },
             upsert=True,
             return_document=ReturnDocument.AFTER)
-        print(f'upserted vote for user {user_id} with choice of {choice}')
         return VoteModel.model_validate(upserted_vote)
+
+
+def delete_votes_by_accusation(accusation_id: str) -> int:
+    if not ObjectId.is_valid(accusation_id):
+        print(f'{accusation_id} is not a valid bson.ObjectId')
+        return None
+
+    with DbContext() as db:
+        result = db["votes"].delete_many(
+            {"accusation_id": ObjectId(accusation_id)})
+        return result.deleted_count

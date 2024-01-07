@@ -5,6 +5,7 @@ from datetime import datetime
 from pymongo import ReturnDocument
 from typing import Optional
 
+from . import votes_client
 from .db_context import DbContext
 from models.accusations import AccusationModel
 
@@ -17,6 +18,16 @@ def get_accusations_by_guild_id(guild_id: str) -> list[AccusationModel]:
             for accusation in accusations
         ]
         return accusations_list
+
+
+def get_accusation_by_message_id(message_id: str) -> Optional[AccusationModel]:
+    with DbContext() as db:
+        accusation = db["accusations"].find_one({"message_id": message_id})
+        if accusation is None:
+            print(f'Could not find accusation with message_id of {message_id}')
+            return None
+
+        return AccusationModel.model_validate(accusation)
 
 
 def get_accusation_by_id(accusation_id: str) -> Optional[AccusationModel]:
@@ -103,3 +114,45 @@ def close_accusation(accusation_id: str) -> Optional[AccusationModel]:
             return None
 
         return AccusationModel.model_validate(close_accusation)
+
+
+def permanently_delete_accusation(
+        accusation_id: str) -> Optional[AccusationModel]:
+    if not ObjectId.is_valid(accusation_id):
+        print(f'{accusation_id} is not a valid bson.ObjectId')
+        return None
+
+    with DbContext() as db:
+        deleted_accusation = db["accusations"].find_one_and_delete(
+            {"_id": ObjectId(accusation_id)})
+        if deleted_accusation is None:
+            print(
+                f'Tried to permanently delete nonexistent accusation with id of {accusation_id}'
+            )
+            return None
+
+        validated_deleted_accusation = AccusationModel.model_validate(
+            deleted_accusation)
+        votes_client.delete_votes_by_accusation(
+            validated_deleted_accusation.id)
+
+        return validated_deleted_accusation
+
+
+def permanently_delete_accusation_by_message_id(
+        message_id: str) -> Optional[AccusationModel]:
+    with DbContext() as db:
+        deleted_accusation = db["accusations"].find_one_and_delete(
+            {"message_id": message_id})
+        if deleted_accusation is None:
+            print(
+                f'Tried to permanently delete nonexistent accusation with message_id of {message_id}'
+            )
+            return None
+
+        validated_deleted_accusation = AccusationModel.model_validate(
+            deleted_accusation)
+        votes_client.delete_votes_by_accusation(
+            validated_deleted_accusation.id)
+
+        return validated_deleted_accusation

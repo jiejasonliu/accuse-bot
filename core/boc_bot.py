@@ -11,20 +11,40 @@ class BOCBot(discord.Bot):
 
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
+        self.all_accusations = []
 
         @self.event
         async def on_ready():
             print(f'Online: {self.user}')
+            fetch_all_accusations(self)
             setup_views(self)
 
-        def setup_views(self):
+        @self.event
+        async def on_raw_message_delete(
+                payload: discord.RawMessageDeleteEvent):
+            if payload.cached_message:
+                message_id = payload.cached_message.id
+                accusations_client.permanently_delete_accusation_by_message_id(
+                    message_id)
+                return
+
+            if payload.message_id:
+                message_id = payload.message_id
+                accusations_client.permanently_delete_accusation_by_message_id(
+                    message_id)
+                return
+
+        def fetch_all_accusations(self):
             guild_ids = [guild.id for guild in self.guilds]
             for guild_id in guild_ids:
                 accusations = accusations_client.get_accusations_by_guild_id(
                     guild_id=guild_id)
                 for accusation in accusations:
-                    accusation_id = accusation.id
-                    self.add_view(AccusationView(self, accusation_id))
+                    self.all_accusations.append(accusation)
+
+        def setup_views(self):
+            for accusation in self.all_accusations:
+                self.add_view(AccusationView(self, accusation.id))
 
     def upsert_vote(self, accusation_id: str, user_id: str,
                     choice: Literal['yes', 'no']):
@@ -83,7 +103,7 @@ Signed by: {accuser.mention}
 > **Guilty:**
 {format_user_mentions_or_empty_state(yes_vote_users)}
 > 
-> **Non-guilty:**
+> **Innocent:**
 {format_user_mentions_or_empty_state(no_vote_users)}
 > 
 > *Vote will pass at (time) EST or majority vote*

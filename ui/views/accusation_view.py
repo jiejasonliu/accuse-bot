@@ -30,3 +30,4 @@ class AccusationView(discord.ui.View):
                          button_style=discord.ButtonStyle.grey,
                          accusation_id=self.accusation_id,
                          custom_id=f'{self.accusation_id}-no'))
+        

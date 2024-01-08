@@ -4,7 +4,7 @@ from bson import int64, ObjectId
 from datetime import datetime
 from pydantic import ValidationError
 from pymongo import ReturnDocument
-from typing import Optional
+from typing import Literal, Optional
 
 from . import votes_client
 from .db_context import DbContext
@@ -61,7 +61,6 @@ def create_accusation(accused: discord.Member, accuser: discord.Member,
             'message_id': int64.Int64(0),
             'channel_id': int64.Int64(0),
             'created_at': datetime.utcnow(),
-            'majority': False,
             'closed': False,
         }
         new_accusation = db["accusations"].insert_one(accusation_model)
@@ -71,7 +70,7 @@ def create_accusation(accused: discord.Member, accuser: discord.Member,
         try:
             return AccusationModel.model_validate(new_accusation_json)
         except ValidationError as e:
-            print('Failed to validate, deleting inserted accusation', e)
+            print('Failed to validate, deleting inserted accusation.\n\n', e)
             permanently_delete_accusation(new_accusation.inserted_id)
             return None
 
@@ -103,7 +102,7 @@ def update_accusation_for_message(
         return AccusationModel.model_validate(updated_accusation)
 
 
-def close_accusation(accusation_id: str) -> Optional[AccusationModel]:
+def close_accusation_with_verdict(accusation_id: str, verdict: Literal['guilty', 'innocent']) -> Optional[AccusationModel]:
     if not ObjectId.is_valid(accusation_id):
         print(f'{accusation_id} is not a valid bson.ObjectId')
         return None
@@ -111,6 +110,7 @@ def close_accusation(accusation_id: str) -> Optional[AccusationModel]:
     with DbContext() as db:
         closed_accusation = db["accusations"].find_one_and_update(
             {"_id": ObjectId(accusation_id)}, {"$set": {
+                "verdict": verdict,
                 "closed": True,
             }},
             return_document=ReturnDocument.AFTER)
@@ -120,7 +120,7 @@ def close_accusation(accusation_id: str) -> Optional[AccusationModel]:
             )
             return None
 
-        return AccusationModel.model_validate(close_accusation)
+        return AccusationModel.model_validate(closed_accusation)
 
 
 def permanently_delete_accusation(

@@ -1,7 +1,7 @@
 from bson import int64
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from typing import Literal, Optional
 
 from .object_id import PyObjectId
 
@@ -18,7 +18,8 @@ class AccusationModel(BaseModel):
     message_id: int64.Int64
     channel_id: int64.Int64
     created_at: datetime
-    majority: bool
+
+    verdict: Optional[Literal['guilty', 'innocent']] = None
     closed: bool
 
     id: PyObjectId = Field(alias="_id")

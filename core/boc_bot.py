@@ -1,4 +1,5 @@
 import discord
+import math
 
 from typing import Literal, Optional
 
@@ -46,11 +47,38 @@ class BOCBot(discord.Bot):
             for accusation in self.all_accusations:
                 self.add_view(AccusationView(self, accusation.id))
 
-    def upsert_vote(self, accusation_id: str, user_id: str,
-                    choice: Literal['yes', 'no']):
-        upserted_vote = votes_client.upsert_user_vote_for_accusation(
-            accusation_id=accusation_id, user_id=user_id, choice=choice)
-        return upserted_vote
+    async def upsert_vote_and_check_result(self, accusation_id: str,
+                                           user_id: str,
+                                           choice: Literal['yes', 'no']):
+        try:
+            upserted_vote = votes_client.upsert_user_vote_for_accusation(
+                accusation_id=accusation_id, user_id=user_id, choice=choice)
+            accusation = accusations_client.get_accusation_by_id(accusation_id)
+            channel = self.get_channel(accusation.channel_id)
+
+            if channel:
+                # member.bot is type unsafe, but seems to work
+                member_count = len([
+                    member for member in channel.members if member.bot == False
+                ])
+                majority_count = math.ceil(member_count / 2)
+
+                all_votes = votes_client.get_votes_by_accusation(accusation_id)
+                yes_count = len(
+                    [vote for vote in all_votes if vote.choice == 'yes'])
+                no_count = len(
+                    [vote for vote in all_votes if vote.choice == 'no'])
+
+                if yes_count >= majority_count:
+                    accusations_client.close_accusation_with_verdict(
+                        accusation_id, verdict='guilty')
+                elif no_count >= majority_count:
+                    accusations_client.close_accusation_with_verdict(
+                        accusation_id, verdict='innocent')
+
+            return upserted_vote
+        except Exception as e:
+            print(e)
 
     async def update_accusation_message(self, accusation_id: str):
         message = await self.__get_message_by_accusation_id(accusation_id)
@@ -61,8 +89,6 @@ class BOCBot(discord.Bot):
             return
 
         accusation = accusations_client.get_accusation_by_id(accusation_id)
-        votes = votes_client.get_votes_by_accusation(accusation_id)
-
         id_to_user = {user.id: user for user in self.users}
         accused = id_to_user.get(accusation.accused_id)
         accuser = id_to_user.get(accusation.accuser_id)
@@ -72,6 +98,7 @@ class BOCBot(discord.Bot):
             )
             return
 
+        votes = votes_client.get_votes_by_accusation(accusation_id)
         yes_vote_users: list[discord.User] = list(
             filter(lambda x: x is not None, [
                 id_to_user.get(vote.voter_id)
@@ -83,14 +110,33 @@ class BOCBot(discord.Bot):
                 for vote in votes if vote.choice == 'no'
             ]))
 
-        def format_user_mentions_or_empty_state(users: list[discord.User]):
-            if len(users) == 0:
-                return '> - None so far'
-            else:
-                return new_line.join([f'> - {user.mention}' for user in users])
-
         new_line = '\n'  # cannot use backslashes in f-strings prior to Python 3.12
-        msg = f'''
+        updated_message = ''
+
+        if accusation.closed:
+            updated_message = f'''
+{'=' * 64}
+**Voting has closed, majority consensus has been reached!**
+
+The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (???)'}.** 
+*({len(yes_vote_users)} guilty, {len(no_vote_users)} innocent)*
+
+{
+    f'{accused.mention} has been banished for {accusation.sentence_length} days.{new_line}The case is now closed.' 
+    if accusation.verdict == 'guilty' else 'The case is now closed.'
+}
+'''
+        else:
+
+            def __format_user_mentions_or_empty_state(
+                    users: list[discord.User]):
+                if len(users) == 0:
+                    return '> - None so far'
+                else:
+                    return new_line.join(
+                        [f'> - {user.mention}' for user in users])
+
+            updated_message = f'''
 {'=' * 64}
 **Accusing {accused.mention}** -- they have 1 (TODO) strike(s) this year.
 
@@ -101,14 +147,17 @@ Proposing a sentence length of 7 (TODO) days for the offense of:
 Signed by: {accuser.mention}
 
 > **Guilty:**
-{format_user_mentions_or_empty_state(yes_vote_users)}
+{__format_user_mentions_or_empty_state(yes_vote_users)}
 > 
 > **Innocent:**
-{format_user_mentions_or_empty_state(no_vote_users)}
+{__format_user_mentions_or_empty_state(no_vote_users)}
 
 *Vote will pass at (time) EST or majority vote*
 '''
-        await message.edit(msg, view=AccusationView(self, accusation_id))
+
+        # update to whatever updated_message was (accusation can be open or closed)
+        await message.edit(updated_message,
+                           view=AccusationView(self, accusation_id))
 
     async def __get_message_by_accusation_id(
             self, accusation_id: str) -> Optional[discord.Message]:

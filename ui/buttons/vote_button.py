@@ -33,7 +33,7 @@ class YesVoteButton(VoteButton):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        self.bot.upsert_vote(accusation_id=self.accusation_id,
+        await self.bot.upsert_vote_and_check_result(accusation_id=self.accusation_id,
                              user_id=interaction.user.id,
                              choice='yes')
         await self.bot.update_accusation_message(self.accusation_id)
@@ -43,7 +43,7 @@ class NoVoteButton(VoteButton):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        self.bot.upsert_vote(accusation_id=self.accusation_id,
+        await self.bot.upsert_vote_and_check_result(accusation_id=self.accusation_id,
                              user_id=interaction.user.id,
                              choice='no')
         await self.bot.update_accusation_message(self.accusation_id)

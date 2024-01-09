@@ -22,15 +22,22 @@ class AccuseCommand(commands.Cog):
 
     @commands.slash_command(name="accuse")
     async def _accuse(
-            self,
-            ctx: discord.ApplicationContext,
-            user: discord.Option(str,
-                                 "Select a user",
-                                 autocomplete=get_member_names_autocomplete,
-                                 required=True),
-            offense: discord.Option(str, "Describe the offense",
-                                    required=True),
-    ):
+        self, ctx: discord.ApplicationContext,
+        user: discord.Option(str,
+                             "Select a user",
+                             autocomplete=get_member_names_autocomplete,
+                             required=True),
+        offense: discord.Option(str, "Describe the offense", required=True),
+        sentence_length_in_days: discord.Option(
+            int,
+            "How many days should they serve their sentence?",
+            required=True)):
+        if sentence_length_in_days < 1 or sentence_length_in_days > 180:
+            await ctx.respond(
+                "> :x:  **Error:** Sentence length must be between **1-180 days.** Let's be realistic here."
+            )
+            return
+
         valid_members = self.filter_valid_members(ctx.channel.members)
         valid_names = [member.display_name for member in valid_members]
         if not (user in valid_names):
@@ -45,13 +52,10 @@ class AccuseCommand(commands.Cog):
             await ctx.respond(f'> :x:  **Error:** Oops, something went wrong.')
             return
 
-        accuser = ctx.user
-        sentence_length = 7  # todo: always 1 week for now
-
         accusation = accusations_client.create_accusation(
             accused=accused,
-            accuser=accuser,
-            sentence_length=sentence_length,
+            accuser=ctx.user,
+            sentence_length=sentence_length_in_days,
             offense=offense,
         )
 

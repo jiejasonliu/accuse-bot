@@ -54,6 +54,9 @@ class BOCBot(discord.Bot):
             upserted_vote = votes_client.upsert_user_vote_for_accusation(
                 accusation_id=accusation_id, user_id=user_id, choice=choice)
             accusation = accusations_client.get_accusation_by_id(accusation_id)
+            if not accusation or accusation.closed:
+                return
+
             channel = self.get_channel(accusation.channel_id)
             if channel:
                 # member.bot is type unsafe, but seems to work

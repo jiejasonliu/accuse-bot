@@ -20,6 +20,9 @@ class AccusationView(discord.ui.View):
         self.add_vote_buttons()
 
     def add_vote_buttons(self):
+        if self.accusation.closed:
+            return
+
         self.add_item(
             YesVoteButton(bot=self.bot,
                           emoji='✅',

@@ -31,7 +31,7 @@ def upsert_user_vote_for_accusation(accusation_id: str, user_id: str,
 
     with DbContext() as db:
         upserted_vote = db["votes"].find_one_and_update(
-            {"voter_id": user_id}, {
+            {"accusation_id": ObjectId(accusation_id), "voter_id": user_id}, {
                 "$set": {
                     "accusation_id": ObjectId(accusation_id),
                     "voter_id": user_id,
@@ -41,6 +41,9 @@ def upsert_user_vote_for_accusation(accusation_id: str, user_id: str,
             },
             upsert=True,
             return_document=ReturnDocument.AFTER)
+        if not upserted_vote:
+            return None
+
         return VoteModel.model_validate(upserted_vote)
 
 

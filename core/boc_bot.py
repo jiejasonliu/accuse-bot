@@ -3,10 +3,10 @@ import discord
 import math
 import pytz
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Literal, Optional
 
-from db import accusations_client, votes_client
+from db import accusations_client, sentences_client, votes_client
 from models.accusations import AccusationModel
 from models.votes import VoteModel
 from ui.views.accusation_view import AccusationView
@@ -61,6 +61,12 @@ class BOCBot(discord.Bot):
                 asyncio.create_task(
                     self.bot_coroutines.expire_accusation_coroutine(
                         accusation))
+
+            sentences = sentences_client.get_all_sentences()
+            for sentence in sentences:
+                asyncio.create_task(
+                    self.bot_coroutines.pardon_sentence_coroutine(sentence))
+
             print('Finished setting up bot coroutines')
 
     async def upsert_vote_and_check_result(self, accusation_id: str,
@@ -85,6 +91,15 @@ class BOCBot(discord.Bot):
             if yes_votes >= majority_count:
                 accusations_client.close_accusation_with_verdict(
                     accusation_id, verdict='guilty')
+
+                expire_time = datetime.utcnow() + timedelta(
+                    days=accusation.sentence_length)
+                sentence = sentences_client.create_sentence(accusation_id=accusation_id,
+                                                 user_id=accusation.accused_id,
+                                                 expires_at=expire_time)
+                if sentence:
+                    asyncio.create_task(
+                        self.bot_coroutines.pardon_sentence_coroutine(sentence))
             elif no_votes >= majority_count:
                 accusations_client.close_accusation_with_verdict(
                     accusation_id, verdict='innocent')

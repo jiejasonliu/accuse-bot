@@ -138,9 +138,10 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
                     return new_line.join(
                         [f'> - {user.mention}' for user in users])
 
+            strike_count = accusations_client.get_number_strikes_for_user(accusation.accused_id)
             updated_message = f'''
 {'=' * 64}
-**Accusing {accused.mention}** -- they have 1 (TODO) strike(s) this year.
+**Accusing {accused.mention}** -- they have {strike_count} strike{'s' if strike_count != 1 else ''} this year.
 
 Proposing a sentence length of 7 (TODO) days for the offense of:
 > 

@@ -46,6 +46,17 @@ def get_accusation_by_id(accusation_id: str) -> Optional[AccusationModel]:
         return AccusationModel.model_validate(accusation)
 
 
+def get_number_strikes_for_user(user_id: str) -> int:
+    with DbContext() as db:
+        strike_count = db["accusations"].count_documents({
+            "accused_id": user_id,
+            "verdict": {
+                '$ne': None
+            }
+        })
+        return strike_count
+
+
 def create_accusation(accused: discord.Member, accuser: discord.Member,
                       sentence_length: int, offense: str) -> AccusationModel:
     with DbContext() as db:
@@ -102,14 +113,17 @@ def update_accusation_for_message(
         return AccusationModel.model_validate(updated_accusation)
 
 
-def close_accusation_with_verdict(accusation_id: str, verdict: Literal['guilty', 'innocent']) -> Optional[AccusationModel]:
+def close_accusation_with_verdict(
+        accusation_id: str,
+        verdict: Literal['guilty', 'innocent']) -> Optional[AccusationModel]:
     if not ObjectId.is_valid(accusation_id):
         print(f'{accusation_id} is not a valid bson.ObjectId')
         return None
 
     with DbContext() as db:
         closed_accusation = db["accusations"].find_one_and_update(
-            {"_id": ObjectId(accusation_id)}, {"$set": {
+            {"_id": ObjectId(accusation_id)},
+            {"$set": {
                 "verdict": verdict,
                 "closed": True,
             }},

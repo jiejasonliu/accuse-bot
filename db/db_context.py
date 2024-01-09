@@ -1,15 +1,17 @@
+from dotenv import load_dotenv, find_dotenv
 from os import getenv
 from pymongo import MongoClient
+
+load_dotenv(find_dotenv('.env'))
+
+client = MongoClient(getenv("MONGODB_CONNECTION_URI"))
+db = client[getenv("DB_NAME")]
 
 
 class DbContext:
 
-    def __init__(self):
-        self.client = MongoClient(getenv("MONGODB_CONNECTION_URI"))
-        self.db = self.client[getenv("DB_NAME")]
-
     def __enter__(self):
-        return self.db
+        return db
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.client.close()
+        pass

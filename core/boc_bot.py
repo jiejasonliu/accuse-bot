@@ -1,11 +1,15 @@
+import datetime
 import discord
 import math
+import pytz
 
 from typing import Literal, Optional
 
 from db import accusations_client, votes_client
 from models.votes import VoteModel
 from ui.views.accusation_view import AccusationView
+
+expire_time_hours = 24
 
 
 class BOCBot(discord.Bot):
@@ -140,6 +144,14 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
 
             strike_count = accusations_client.get_number_strikes_for_user(
                 accusation.accused_id)
+
+            expire_time = accusation.created_at + datetime.timedelta(
+                hours=expire_time_hours)
+            est_time = expire_time.replace(
+                tzinfo=pytz.timezone('UTC')).astimezone(
+                    pytz.timezone('US/Eastern'))
+            formatted_expire_time = est_time.strftime("%Y-%m-%d %I:%M %p %Z")
+
             updated_message = f'''
 {'=' * 64}
 **Accusing {accused.mention}** -- they have {strike_count} strike{'s' if strike_count != 1 else ''} this year.
@@ -156,7 +168,7 @@ Signed by: {accuser.mention}
 > **Innocent:**
 {__format_user_mentions_or_empty_state(no_vote_users)}
 
-*Vote will pass at (time) EST or majority vote*
+*Verdict will be determined at **{formatted_expire_time}** or when majority is reached.*
 '''
 
         # update to whatever updated_message was (accusation can be open or closed)

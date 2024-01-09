@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 from discord.ext import commands
@@ -21,17 +22,19 @@ class AccuseCommand(commands.Cog):
         return [member.display_name for member in valid_members]
 
     @commands.slash_command(name="accuse")
-    async def _accuse(
-        self, ctx: discord.ApplicationContext,
-        user: discord.Option(str,
-                             "Select a user",
-                             autocomplete=get_member_names_autocomplete,
-                             required=True),
-        offense: discord.Option(str, "Describe the offense", required=True),
-        sentence_length_in_days: discord.Option(
-            int,
-            "How many days should they serve their sentence?",
-            required=True)):
+    async def _accuse(self, ctx: discord.ApplicationContext,
+                      user: discord.Option(
+                          str,
+                          "Select a user",
+                          autocomplete=get_member_names_autocomplete,
+                          required=True),
+                      offense: discord.Option(str,
+                                              "Describe the offense",
+                                              required=True),
+                      sentence_length_in_days: discord.Option(
+                          int,
+                          "How many days should they serve their sentence?",
+                          required=True)):
         if sentence_length_in_days < 1 or sentence_length_in_days > 180:
             await ctx.respond(
                 "> :x:  **Error:** Sentence length must be between **1-180 days.** Let's be realistic here."
@@ -58,6 +61,9 @@ class AccuseCommand(commands.Cog):
             sentence_length=sentence_length_in_days,
             offense=offense,
         )
+        asyncio.create_task(
+            self.bot.bot_coroutines.expire_accusation_coroutine(
+                accusation=accusation))
 
         interaction_or_message = await ctx.respond(
             f'loading details, please wait...',

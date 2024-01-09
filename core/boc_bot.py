@@ -1,15 +1,17 @@
-import datetime
+import asyncio
 import discord
 import math
 import pytz
 
+from datetime import timedelta
 from typing import Literal, Optional
 
 from db import accusations_client, votes_client
+from models.accusations import AccusationModel
 from models.votes import VoteModel
 from ui.views.accusation_view import AccusationView
-
-expire_time_hours = 24
+from .bot_coroutines import BotCoroutines
+from .constants import expire_time_hours
 
 
 class BOCBot(discord.Bot):
@@ -17,12 +19,14 @@ class BOCBot(discord.Bot):
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
         self.all_accusations = []
+        self.bot_coroutines = BotCoroutines(self)
 
         @self.event
         async def on_ready():
-            print(f'Online: {self.user}')
             fetch_all_accusations(self)
             setup_views(self)
+            setup_coroutines(self)
+            print(f'READY: {self.user}')
 
         @self.event
         async def on_raw_message_delete(
@@ -47,9 +51,17 @@ class BOCBot(discord.Bot):
                 for accusation in accusations:
                     self.all_accusations.append(accusation)
 
-        def setup_views(self):
+        def setup_views(self: BOCBot):
             for accusation in self.all_accusations:
                 self.add_view(AccusationView(self, accusation=accusation))
+            print('Finished setting up views')
+
+        def setup_coroutines(self: BOCBot):
+            for accusation in self.all_accusations:
+                asyncio.create_task(
+                    self.bot_coroutines.expire_accusation_coroutine(
+                        accusation))
+            print('Finished setting up bot coroutines')
 
     async def upsert_vote_and_check_result(self, accusation_id: str,
                                            user_id: str,
@@ -61,30 +73,33 @@ class BOCBot(discord.Bot):
             if not accusation or accusation.closed:
                 return
 
+            # member.bot is type unsafe, but seems to work
             channel = self.get_channel(accusation.channel_id)
-            if channel:
-                # member.bot is type unsafe, but seems to work
-                member_count = len([
-                    member for member in channel.members if member.bot == False
-                ])
-                majority_count = math.ceil(member_count / 2)
+            if not channel:
+                return
+            member_count = len(
+                [member for member in channel.members if member.bot == False])
+            majority_count = math.ceil(member_count / 2)
+            yes_votes, no_votes = self.get_vote_counts(accusation)
 
-                all_votes = votes_client.get_votes_by_accusation(accusation_id)
-                yes_count = len(
-                    [vote for vote in all_votes if vote.choice == 'yes'])
-                no_count = len(
-                    [vote for vote in all_votes if vote.choice == 'no'])
-
-                if yes_count >= majority_count:
-                    accusations_client.close_accusation_with_verdict(
-                        accusation_id, verdict='guilty')
-                elif no_count >= majority_count:
-                    accusations_client.close_accusation_with_verdict(
-                        accusation_id, verdict='innocent')
+            if yes_votes >= majority_count:
+                accusations_client.close_accusation_with_verdict(
+                    accusation_id, verdict='guilty')
+            elif no_votes >= majority_count:
+                accusations_client.close_accusation_with_verdict(
+                    accusation_id, verdict='innocent')
 
             return upserted_vote
         except Exception as e:
             print(e)
+
+    # Returns: (yes_count, no_count)
+    def get_vote_counts(self, accusation: AccusationModel) -> (int, int):
+        all_votes = votes_client.get_votes_by_accusation(accusation.id)
+        yes_count = len([vote for vote in all_votes if vote.choice == 'yes'])
+        no_count = len([vote for vote in all_votes if vote.choice == 'no'])
+
+        return (yes_count, no_count)
 
     async def update_accusation_message(self, accusation_id: str):
         message = await self.__get_message_by_accusation_id(accusation_id)
@@ -145,7 +160,7 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
             strike_count = accusations_client.get_number_strikes_for_user(
                 accusation.accused_id)
 
-            expire_time = accusation.created_at + datetime.timedelta(
+            expire_time = accusation.created_at + timedelta(
                 hours=expire_time_hours)
             est_time = expire_time.replace(
                 tzinfo=pytz.timezone('UTC')).astimezone(

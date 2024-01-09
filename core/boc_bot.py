@@ -45,7 +45,7 @@ class BOCBot(discord.Bot):
 
         def setup_views(self):
             for accusation in self.all_accusations:
-                self.add_view(AccusationView(self, accusation.id))
+                self.add_view(AccusationView(self, accusation=accusation))
 
     async def upsert_vote_and_check_result(self, accusation_id: str,
                                            user_id: str,
@@ -55,7 +55,6 @@ class BOCBot(discord.Bot):
                 accusation_id=accusation_id, user_id=user_id, choice=choice)
             accusation = accusations_client.get_accusation_by_id(accusation_id)
             channel = self.get_channel(accusation.channel_id)
-
             if channel:
                 # member.bot is type unsafe, but seems to work
                 member_count = len([
@@ -157,7 +156,7 @@ Signed by: {accuser.mention}
 
         # update to whatever updated_message was (accusation can be open or closed)
         await message.edit(updated_message,
-                           view=AccusationView(self, accusation_id))
+                           view=AccusationView(self, accusation=accusation))
 
     async def __get_message_by_accusation_id(
             self, accusation_id: str) -> Optional[discord.Message]:

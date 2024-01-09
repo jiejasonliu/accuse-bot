@@ -57,7 +57,7 @@ class AccuseCommand(commands.Cog):
 
         interaction_or_message = await ctx.respond(
             f'loading details, please wait...',
-            view=AccusationView(bot=self.bot, accusation_id=accusation.id))
+            view=AccusationView(bot=self.bot, accusation=accusation))
 
         if isinstance(interaction_or_message, discord.Interaction):
             message = await interaction_or_message.original_response()

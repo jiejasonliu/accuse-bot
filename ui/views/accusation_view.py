@@ -1,7 +1,9 @@
 import discord
 
 from typing import TYPE_CHECKING
+
 from ..buttons.vote_button import YesVoteButton, NoVoteButton
+from models.accusations import AccusationModel 
 
 if TYPE_CHECKING:
     from core.boc_bot import BOCBot
@@ -9,11 +11,11 @@ if TYPE_CHECKING:
 
 class AccusationView(discord.ui.View):
 
-    def __init__(self, bot: 'BOCBot', accusation_id: str):
+    def __init__(self, bot: 'BOCBot', accusation: AccusationModel):
         # for a persistent view, timeout of the view must be set to None
         super().__init__(timeout=None)
         self.bot = bot
-        self.accusation_id = accusation_id
+        self.accusation = accusation
 
         self.add_vote_buttons()
 
@@ -22,12 +24,12 @@ class AccusationView(discord.ui.View):
             YesVoteButton(bot=self.bot,
                           emoji='✅',
                           button_style=discord.ButtonStyle.grey,
-                          accusation_id=self.accusation_id,
-                          custom_id=f'{self.accusation_id}-yes'))
+                          accusation_id=self.accusation.id,
+                          custom_id=f'{self.accusation.id}-yes'))
         self.add_item(
             NoVoteButton(bot=self.bot,
                          emoji="❌",
                          button_style=discord.ButtonStyle.grey,
-                         accusation_id=self.accusation_id,
-                         custom_id=f'{self.accusation_id}-no'))
+                         accusation_id=self.accusation.id,
+                         custom_id=f'{self.accusation.id}-no'))
         

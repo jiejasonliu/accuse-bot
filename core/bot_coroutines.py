@@ -69,4 +69,5 @@ class BotCoroutines:
         if time_difference_seconds >= 30:
             await asyncio.sleep(time_difference_seconds)
 
+        sentences_client.permanently_delete_sentence_by_id(sentence.id)
         await self.bot.move_member_role(sentence, direction='backwards')

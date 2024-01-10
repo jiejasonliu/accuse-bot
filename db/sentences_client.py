@@ -15,7 +15,8 @@ def get_all_sentences() -> list[SentenceModel]:
         return sentences_list
 
 
-def create_sentence(accusation_id: str, guild_id: int64.Int64, user_id: int64.Int64,
+def create_sentence(accusation_id: str, guild_id: int64.Int64,
+                    user_id: int64.Int64,
                     expires_at: datetime) -> Optional[SentenceModel]:
     if not ObjectId.is_valid(accusation_id):
         print(f'{accusation_id} is not a valid bson.ObjectId')
@@ -33,3 +34,20 @@ def create_sentence(accusation_id: str, guild_id: int64.Int64, user_id: int64.In
             {"_id": new_sentence.inserted_id})
 
         return SentenceModel.model_validate(new_sentence_json)
+
+
+def permanently_delete_sentence_by_id(sentence_id: str) -> Optional[SentenceModel]:
+    if not ObjectId.is_valid(sentence_id):
+        print(f'{sentence_id} is not a valid bson.ObjectId')
+        return None
+
+    with DbContext() as db:
+        deleted_sentence = db["sentences"].find_one_and_delete(
+            {"_id": sentence_id})
+        if deleted_sentence is None:
+            print(
+                f'Tried to permanently delete nonexistent sentence with id of {sentence_id}'
+            )
+            return None
+
+        return SentenceModel.model_validate(deleted_sentence)

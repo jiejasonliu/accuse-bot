@@ -3,11 +3,13 @@ import discord
 import math
 import pytz
 
+from bson import int64
 from datetime import datetime, timedelta
 from typing import Literal, Optional
 
 from db import accusations_client, role_hierarchies_client, sentences_client, votes_client
 from models.accusations import AccusationModel
+from models.sentences import SentenceModel
 from models.votes import VoteModel
 from ui.views.accusation_view import AccusationView
 from .bot_coroutines import BotCoroutines
@@ -100,6 +102,7 @@ class BOCBot(discord.Bot):
                     user_id=accusation.accused_id,
                     expires_at=expire_time)
                 if sentence:
+                    await self.move_member_role(sentence, direction='forward')
                     asyncio.create_task(
                         self.bot_coroutines.pardon_sentence_coroutine(
                             sentence))
@@ -118,6 +121,69 @@ class BOCBot(discord.Bot):
         no_count = len([vote for vote in all_votes if vote.choice == 'no'])
 
         return (yes_count, no_count)
+
+    async def move_member_role(self, sentence: SentenceModel,
+                               direction: Literal['forward', 'backwards']):
+        role_hierarchy_ids = role_hierarchies_client.get_role_hierarchy(
+            guild_id=sentence.guild_id).role_ids
+        guild = self.get_guild(sentence.guild_id)
+        if not guild:
+            print(
+                f'Failed to get guild ({sentence.guild_id}) when moving member roles'
+            )
+            return
+
+        member = guild.get_member(sentence.user_id)
+        if not member:
+            print(
+                f'Failed to get member ({sentence.user_id}) when moving member roles'
+            )
+            return
+
+        # Find last role in the hierarchy that the member has
+        first_role_id_from_last = None
+        for role_id_from_back in reversed(role_hierarchy_ids):
+            role_from_back = member.get_role(role_id_from_back)
+            if role_from_back is not None:
+                first_role_id_from_last = role_id_from_back
+                break
+
+        first_role_id = role_hierarchy_ids[0]
+        last_role_id = role_hierarchy_ids[-1]
+
+        def role_snowflakes(role_ids: list[int64.Int64]):
+            return [RoleSnowflake(role_id) for role_id in role_ids]
+
+        # Member has at least one of the roles in the hierarchy, we took the first from last
+        if first_role_id_from_last:
+            # It's the lowest one
+            if first_role_id_from_last == first_role_id:
+                if direction == 'forward':
+                    await member.remove_roles(
+                        *role_snowflakes(role_hierarchy_ids))
+                    new_index = role_hierarchy_ids.index(
+                        first_role_id_from_last)
+                    new_role_id = role_hierarchy_ids[new_index + 1]
+                    await member.add_roles(*role_snowflakes([new_role_id]))
+            # It's the highest one
+            elif first_role_id_from_last == last_role_id:
+                if direction == 'backwards':
+                    await member.remove_roles(
+                        *role_snowflakes(role_hierarchy_ids))
+                    new_index = role_hierarchy_ids.index(
+                        first_role_id_from_last)
+                    new_role_id = role_hierarchy_ids[new_index - 1]
+                    await member.add_roles(*role_snowflakes([new_role_id]))
+            # It's in the middle somewhere, go in the direction as needed
+            else:
+                await member.remove_roles(*role_snowflakes(role_hierarchy_ids))
+                new_index = role_hierarchy_ids.index(first_role_id_from_last)
+                direction_index = 1 if direction == 'forward' else -1
+                new_role_id = role_hierarchy_ids[new_index + direction_index]
+                await member.add_roles(*role_snowflakes([new_role_id]))
+        # They have no existing role from the hierarchy
+        else:
+            await member.add_roles(*role_snowflakes([first_role_id]))
 
     async def update_accusation_message(self, accusation_id: str):
         message = await self.__get_message_by_accusation_id(accusation_id)
@@ -223,3 +289,10 @@ Signed by: {accuser.mention}
     def __get_user_from_vote(self, vote: VoteModel, id_to_user: Optional[map]):
         if not id_to_user:
             id_to_user = {user.id: user for user in self.users}
+
+
+# matches the interface of a discord.Snowflake
+class RoleSnowflake:
+
+    def __init__(self, id: int64.Int64):
+        self.id = id

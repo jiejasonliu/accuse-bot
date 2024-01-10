@@ -50,6 +50,7 @@ class BotCoroutines:
                 user_id=accusation.accused_id,
                 expires_at=expire_time)
             if sentence:
+                await self.move_member_role(sentence, direction='forward')
                 asyncio.create_task(
                     self.bot_coroutines.pardon_sentence_coroutine(sentence))
         else:
@@ -68,5 +69,4 @@ class BotCoroutines:
         if time_difference_seconds >= 30:
             await asyncio.sleep(time_difference_seconds)
 
-        print('Pardon')
-        pass
+        await self.bot.move_member_role(sentence, direction='backwards')

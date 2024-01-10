@@ -1,4 +1,4 @@
-from bson import ObjectId
+from bson import int64, ObjectId
 from datetime import datetime
 from typing import Optional
 
@@ -15,7 +15,7 @@ def get_all_sentences() -> list[SentenceModel]:
         return sentences_list
 
 
-def create_sentence(accusation_id: str, user_id: str,
+def create_sentence(accusation_id: str, guild_id: int64.Int64, user_id: int64.Int64,
                     expires_at: datetime) -> Optional[SentenceModel]:
     if not ObjectId.is_valid(accusation_id):
         print(f'{accusation_id} is not a valid bson.ObjectId')
@@ -24,6 +24,7 @@ def create_sentence(accusation_id: str, user_id: str,
     with DbContext() as db:
         sentence_model = {
             "accusation_id": ObjectId(accusation_id),
+            "guild_id": guild_id,
             "user_id": user_id,
             "expires_at": expires_at,
         }

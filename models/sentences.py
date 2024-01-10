@@ -9,6 +9,7 @@ from .object_id import PyObjectId
 # collection: "sentences"
 class SentenceModel(BaseModel):
     accusation_id: PyObjectId
+    guild_id: int64.Int64
     user_id: int64.Int64
     expires_at: datetime
 

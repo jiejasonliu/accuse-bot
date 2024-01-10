@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from typing import TYPE_CHECKING
 
-from db import accusations_client
+from db import accusations_client, role_hierarchies_client
 from ui.views.accusation_view import AccusationView
 
 if TYPE_CHECKING:
@@ -53,6 +53,14 @@ class AccuseCommand(commands.Cog):
              for member in valid_members if member.display_name == user), None)
         if accused is None:
             await ctx.respond(f'> :x:  **Error:** Oops, something went wrong.')
+            return
+
+        role_hierarchy_ids = role_hierarchies_client.get_role_hierarchy(
+            guild_id=accused.guild.id).role_ids
+        if accused.get_role(role_hierarchy_ids[-1]) is not None:
+            await ctx.respond(
+                f'> :x:  **Error:** {accused.mention} cannot receive any more punishments. Add to the role hierarchy `/roles` to accuse this user.'
+            )
             return
 
         accusation = accusations_client.create_accusation(

@@ -258,7 +258,7 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
 
 Proposing a sentence length of {accusation.sentence_length} day{'s' if accusation.sentence_length != 1 else ''} for the offense of:
 > 
-> *{string_helper.escape_markdown(accusation.offense)}*
+> *{string_helper.insert_line_breaks(string_helper.escape_markdown(accusation.offense), delimiter=f'{new_line}> ')}*
 > 
 Signed by: {accuser.mention}
 

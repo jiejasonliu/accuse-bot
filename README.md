@@ -12,7 +12,7 @@ Discord bot for managing accusations with means to vote for an outcome. Users ar
 
 ```sh
 sudo apt update
-sudo apt install git python3 python3-dev python3-venv
+sudo apt install git tmux python3 python3-dev python3-venv
 mkdir bot && cd bot
 git clone https://github.com/jiejasonliu/accuse-bot.git
 cd accuse-bot
@@ -21,6 +21,10 @@ source .venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 
-# update .env before running the bot
-python3 main.py
+# note: update .env before running the bot
+
+# run the command detached from the ephermal shell if ssh-ing into the host
+# to detach: CTRL + B then D 
+tmux
+python3 main.py 
 ```

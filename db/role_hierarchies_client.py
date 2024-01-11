@@ -1,5 +1,5 @@
-from bson import int64, ObjectId
-from datetime import datetime
+from bson import int64
+from pymongo import ReturnDocument
 from typing import Optional
 
 from .db_context import DbContext
@@ -21,12 +21,13 @@ def set_role_hierarchy(
     role_id_hierarchy: list[int64.Int64],
 ) -> RoleHierarchyModel:
     with DbContext() as db:
-        role_hierarchy_model = {
-            "guild_id": guild_id,
-            "role_ids": role_id_hierarchy,
-        }
-        new_role_hierarchy = db["role_hierarchies"].insert_one(role_hierarchy_model)
-        new_role_hierarchy_json = db["role_hierarchies"].find_one(
-            {"_id": new_role_hierarchy.inserted_id})
+        new_role_hierarchy = db["role_hierarchies"].find_one_and_update(
+            {"guild_id": guild_id},
+            {"$set": {
+                "guild_id": guild_id,
+                "role_ids": role_id_hierarchy,
+            }},
+            upsert=True,
+            return_document=ReturnDocument.AFTER)
 
-        return RoleHierarchyModel.model_validate(new_role_hierarchy_json)
+        return RoleHierarchyModel.model_validate(new_role_hierarchy)

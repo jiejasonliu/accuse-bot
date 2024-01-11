@@ -20,11 +20,13 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
+```
 
-# note: update .env before running the bot
-
-# run the command detached from the ephermal shell if ssh-ing into the host
-# to detach: CTRL + B then D 
+### Running the bot
+Update ``.env`` before running the bot.  
+Run the command detached from the ephemeral shell (when ssh-ing into the host).  
+When using `tmux`, you can detach with `CTRL + B then D`.  
+```sh
 tmux
 python3 main.py 
 ```

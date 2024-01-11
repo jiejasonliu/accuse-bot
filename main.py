@@ -1,3 +1,5 @@
+import discord
+import logging
 import os
 
 from dotenv import load_dotenv, find_dotenv
@@ -7,6 +9,11 @@ from core.boc_bot import BOCBot
 
 load_dotenv(find_dotenv('.env'))
 
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 def main():
     bot = BOCBot()

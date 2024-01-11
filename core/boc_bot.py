@@ -228,9 +228,15 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
 *({len(yes_vote_users)} guilty, {len(no_vote_users)} innocent)*
 
 {
-    f'{accused.mention} has been banished for {accusation.sentence_length} days.{new_line}The case is now closed.' 
-    if accusation.verdict == 'guilty' else 'The case is now closed.'
+    f'{accused.mention} has been banished for {accusation.sentence_length} days for the offense of:' 
+    if accusation.verdict == 'guilty' else f'{accused.mention} has been absolved of the offense of:'
 }
+> 
+> *{string_helper.insert_line_breaks(string_helper.escape_markdown(accusation.offense), delimiter=f'{new_line}> ')}*
+> 
+- Signed by: {accuser.mention}
+
+The case is now closed.
 '''
         else:
 
@@ -256,11 +262,11 @@ The jury has found {accused.mention} to be **{accusation.verdict or 'unknown (??
 {'=' * 64}
 **Accusing {accused.mention}** -- they have {strike_count} strike{'s' if strike_count != 1 else ''} this year.
 
-Proposing a sentence length of {accusation.sentence_length} day{'s' if accusation.sentence_length != 1 else ''} for the offense of:
+Proposing a sentence length of **{accusation.sentence_length} day{'s' if accusation.sentence_length != 1 else ''}** for the offense of:
 > 
 > *{string_helper.insert_line_breaks(string_helper.escape_markdown(accusation.offense), delimiter=f'{new_line}> ')}*
 > 
-Signed by: {accuser.mention}
+- Signed by: {accuser.mention}
 
 > **Guilty:**
 {__format_user_mentions_or_empty_state(yes_vote_users)}

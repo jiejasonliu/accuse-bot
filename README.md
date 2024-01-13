@@ -3,9 +3,10 @@
 Discord bot for managing accusations with means to vote for an outcome. Users are moved up or down in the role hierarchy when punished or pardoned respectively. Accusations and any sentences given are serialized and are managed with coroutines to perform actions across their lifetime.
 
 ### Supported Commands
-```
-/accuse
-/roles
+```sh
+/accuse         # Accuse a user of an offense
+/roles          # Set up the role hierarchy
+/sentences      # Query a user's active sentences
 ```
 
 ### Deployment

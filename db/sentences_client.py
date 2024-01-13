@@ -14,6 +14,14 @@ def get_all_sentences() -> list[SentenceModel]:
         ]
         return sentences_list
 
+def get_all_sentences_for_user(user_id: int64.Int64) -> list[SentenceModel]:
+    with DbContext() as db:
+        sentences = db["sentences"].find({"user_id": user_id})
+        sentences_list = [
+            SentenceModel.model_validate(sentence) for sentence in sentences
+        ]
+        return sentences_list 
+
 
 def create_sentence(accusation_id: str, guild_id: int64.Int64,
                     user_id: int64.Int64,

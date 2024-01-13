@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv, find_dotenv
 
-from cogs import accuse, roles
+from cogs import accuse, roles, sentences
 from core.boc_bot import BOCBot
 
 load_dotenv(find_dotenv('.env'))
@@ -21,6 +21,8 @@ def main():
     # register cogs
     bot.add_cog(accuse.AccuseCommand(bot))
     bot.add_cog(roles.RolesCommand(bot))
+    bot.add_cog(sentences.SentencesCommand(bot))
+
 
     # entry point
     bot.run(os.getenv('TOKEN'))

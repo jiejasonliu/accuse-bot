@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Literal, Optional
 
 from db import accusations_client, role_hierarchies_client, sentences_client, votes_client
-from helpers import string_helper
+from helpers import string_helper, time_helper
 from models.accusations import AccusationModel
 from models.sentences import SentenceModel
 from models.votes import VoteModel
@@ -253,10 +253,9 @@ The case is now closed.
 
             expire_time = accusation.created_at + timedelta(
                 hours=expire_time_hours)
-            est_time = expire_time.replace(
-                tzinfo=pytz.timezone('UTC')).astimezone(
-                    pytz.timezone('US/Eastern'))
-            formatted_expire_time = est_time.strftime("%Y-%m-%d %I:%M %p %Z")
+            formatted_expire_time = time_helper.utc_to_human_readable(
+                utc_time=expire_time,
+                timezone_info=pytz.timezone('US/Eastern'))
 
             updated_message = f'''
 {'=' * 64}

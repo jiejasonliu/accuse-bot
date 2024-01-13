@@ -21,7 +21,11 @@ class AccuseCommand(commands.Cog):
             ctx.interaction.channel.members)
         return [member.display_name for member in valid_members]
 
-    @commands.slash_command(name="accuse")
+    def filter_valid_members(self, members: list[discord.Member]):
+        return [member for member in members if member.bot == False]
+
+    @commands.slash_command(name="accuse",
+                            description="Accuse a user of an offense")
     async def _accuse(self, ctx: discord.ApplicationContext,
                       user: discord.Option(
                           str,
@@ -85,6 +89,3 @@ class AccuseCommand(commands.Cog):
         accusations_client.update_accusation_for_message(
             accusation.id, message)
         await self.bot.update_accusation_message(accusation.id)
-
-    def filter_valid_members(self, members: list[discord.Member]):
-        return [member for member in members if member.bot == False]

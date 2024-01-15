@@ -284,10 +284,9 @@ Proposing a sentence length of **{accusation.sentence_length} day{'s' if accusat
             self, accusation_id: str) -> Optional[discord.Message]:
         try:
             accusation = accusations_client.get_accusation_by_id(accusation_id)
-            partial_messageable = self.get_partial_messageable(
-                accusation.channel_id)
-            return await partial_messageable.fetch_message(
-                accusation.message_id)
+            channel = self.get_channel(accusation.channel_id)
+            message = await channel.fetch_message(accusation.message_id)
+            return message
         except Exception as e:
             print('(__get_message_by_accusation_id)', e)
             return None

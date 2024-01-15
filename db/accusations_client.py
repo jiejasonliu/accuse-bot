@@ -51,7 +51,7 @@ def get_number_strikes_for_user(user_id: str) -> int:
         strike_count = db["accusations"].count_documents({
             "accused_id": user_id,
             "verdict": {
-                '$ne': None
+                '$eq': 'guilty'
             }
         })
         return strike_count

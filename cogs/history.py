@@ -50,7 +50,7 @@ class HistoryCommand(commands.Cog):
         current_time_in_est = time_helper.utc_to_human_readable(
             utc_time=datetime.now(), timezone_info=pytz.timezone('US/Eastern'))
 
-        await ctx.send(
+        await ctx.respond(
             content=f"Accusation history as of **{current_time_in_est}:**",
             file=discord.File(fp=stream, filename=filename))
 

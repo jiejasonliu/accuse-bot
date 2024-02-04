@@ -5,6 +5,7 @@ Discord bot for managing accusations with means to vote for an outcome. Users ar
 ### Supported Commands
 ```sh
 /accuse         # Accuse a user of an offense
+/history        # Sends a file containing accusation histories
 /roles          # Set up the role hierarchy
 /sentences      # Query a user's active sentences
 ```

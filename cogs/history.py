@@ -7,7 +7,7 @@ from discord.ext import commands
 from typing import TYPE_CHECKING
 
 from db import accusations_client
-from helpers import time_helper
+from helpers import string_helper, time_helper
 from models.accusations import AccusationModel
 
 if TYPE_CHECKING:
@@ -64,6 +64,6 @@ class HistoryCommand(commands.Cog):
         return '\n'.join([
             f'On {time_helper.utc_to_human_readable(utc_time=accusation.created_at, timezone_info=pytz.timezone("US/Eastern"))}:',
             f'{accusation.accused_display_name} was accused by {accusation.accuser_display_name} for:',
-            f'\n"${accusation.offense}"\n',
+            f'\n"{string_helper.insert_line_breaks(accusation.offense)}"\n',
             verdict_phrase,
         ])

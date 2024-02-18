@@ -50,9 +50,9 @@ class BotCoroutines:
                 user_id=accusation.accused_id,
                 expires_at=expire_time)
             if sentence:
-                await self.move_member_role(sentence, direction='forward')
+                await self.bot.move_member_role(sentence, direction='forward')
                 asyncio.create_task(
-                    self.bot_coroutines.pardon_sentence_coroutine(sentence))
+                    self.pardon_sentence_coroutine(sentence))
         else:
             accusations_client.close_accusation_with_verdict(
                 accusation_id=accusation.id, verdict='innocent')

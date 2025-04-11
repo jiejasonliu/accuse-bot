@@ -75,9 +75,9 @@ class BOCBot(discord.Bot):
 
             sentences = sentences_client.get_all_sentences()
             for sentence in sentences:
-                pac_task = asyncio.create_task(
+                psc_task = asyncio.create_task(
                     self.bot_coroutines.pardon_sentence_coroutine(sentence))
-                self.tasks.append(pac_task)
+                self.tasks.append(psc_task)
 
             print(
                 f'Finished setting up bot coroutines, total: {len(self.tasks)}'

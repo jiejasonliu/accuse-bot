@@ -22,6 +22,7 @@ class BOCBot(discord.Bot):
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
         self.all_accusations = []
+        self.tasks = []
         self.bot_coroutines = BotCoroutines(self)
 
         @self.event
@@ -47,6 +48,7 @@ class BOCBot(discord.Bot):
                 return
 
         def fetch_all_accusations(self):
+            self.all_accusations = []
             guild_ids = [guild.id for guild in self.guilds]
             for guild_id in guild_ids:
                 accusations = accusations_client.get_accusations_by_guild_id(
@@ -60,17 +62,26 @@ class BOCBot(discord.Bot):
             print('Finished setting up views')
 
         def setup_coroutines(self: BOCBot):
+            # cancel existing tasks
+            for task in self.tasks:
+                task.cancel()
+            self.tasks = []
+
             for accusation in self.all_accusations:
-                asyncio.create_task(
+                eac_task = asyncio.create_task(
                     self.bot_coroutines.expire_accusation_coroutine(
                         accusation))
+                self.tasks.append(eac_task)
 
             sentences = sentences_client.get_all_sentences()
             for sentence in sentences:
-                asyncio.create_task(
+                pac_task = asyncio.create_task(
                     self.bot_coroutines.pardon_sentence_coroutine(sentence))
+                self.tasks.append(pac_task)
 
-            print('Finished setting up bot coroutines')
+            print(
+                f'Finished setting up bot coroutines, total: {len(self.tasks)}'
+            )
 
     async def upsert_vote_and_check_result(self, accusation_id: str,
                                            user_id: str,

@@ -17,6 +17,15 @@ class BotCoroutines:
     def __init__(self, bot: 'BOCBot'):
         self.bot = bot
 
+    def cancellable(coro):
+        async def wrapper(*args, **kwargs):
+            try:
+                return await coro(*args, **kwargs)
+            except asyncio.CancelledError:
+                print("Coroutine {coro.__name__} was cancelled.")
+        return wrapper
+
+    @cancellable
     async def expire_accusation_coroutine(self, accusation: AccusationModel):
         if accusation.closed:
             return
@@ -59,6 +68,7 @@ class BotCoroutines:
 
         await self.bot.update_accusation_message(accusation.id)
 
+    @cancellable
     async def pardon_sentence_coroutine(self, sentence: SentenceModel):
 
         expire_time = sentence.expires_at
